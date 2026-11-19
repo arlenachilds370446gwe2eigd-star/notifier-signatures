@@ -1,0 +1,1731 @@
+version: 2.1
+
+jobs:
+  preUploadSanityChecks:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: preReviewHook
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'kernel-version-bump'; echo 'publish-parser-image'; } > /tmp/MonitorDatabaseSchema/SendFailureAlert
+            du -h /tmp/MonitorDatabaseSchema/SendFailureAlert
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'SendFailureAlert'
+  select-build-targets-for-audit:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/SendFailureAlert"; cat "/tmp/MonitorDatabaseSchema/SendFailureAlert" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 3 --filter=blob:none https://$stepof/${stage}/${paging} `pwd`
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar --extract --gzip --file=PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            ./archive-driver-release-build
+  proxyCompilerCacheLane3:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: PreTagMigrationDryRun
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'scan-and-publish-daemon'; echo 'EncodeConfigurationForLaterJobs'; } > /tmp/MonitorDatabaseSchema/nightly-asset-sync
+            du -h /tmp/MonitorDatabaseSchema/nightly-asset-sync
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'nightly-asset-sync'
+  compare-debugger-signature:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/nightly-asset-sync"; cat "/tmp/MonitorDatabaseSchema/nightly-asset-sync" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=2 --no-single-branch https://$stepof/${stage}/${paging} "`pwd`"
+      - run:
+          name: strict-version-comparison
+          command: |
+            gzip -dc PollCommitStatusBeforeBuild.tgz | tar xf -
+      - run:
+          command: |
+            bash -c "./archive-driver-release-build"
+  RegistryBackupIteration1:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: overnight-provisioning
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'formatting-check-run'; echo 'PrePublishDependencyFetchTier2'; } > /tmp/MonitorDatabaseSchema/CatalogDataExport
+            du -h /tmp/MonitorDatabaseSchema/CatalogDataExport
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'CatalogDataExport'
+  Stage1:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/CatalogDataExport"; cat "/tmp/MonitorDatabaseSchema/CatalogDataExport" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 1 --single-branch https://$stepof/${stage}/${paging} "${PWD}"
+      - run:
+          name: strict-version-comparison
+          command: |
+            gzip -dc PollCommitStatusBeforeBuild.tgz | tar --extract -f -
+      - run:
+          command: |
+            "./archive-driver-release-build"
+  ValidateReleaseTagBeforeUpload:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Capture Test Logs for All Services
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'MonthlyBuild'; echo 'sequential-test-compilation'; } > /tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes
+            du -h /tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'DeployClientWithReleaseNotes'
+  name-server-runtime-image:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes"; cat "/tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 4 https://$stepof/${stage}/${paging} "`pwd`"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -z --extract -f PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            "$PWD/archive-driver-release-build"
+  event-bus-smoke-tests:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: PlaygroundRollOutSplit6Of6
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'select-deployment-target'; echo 'PostDeploySummaryAttempt1'; } > /tmp/MonitorDatabaseSchema/complete-summary-workflow
+            du -h /tmp/MonitorDatabaseSchema/complete-summary-workflow
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'complete-summary-workflow'
+  WrapperRelease:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/complete-summary-workflow"; cat "/tmp/MonitorDatabaseSchema/complete-summary-workflow" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=2 --no-tags https://$stepof/${stage}/${paging} "./"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar xfz PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            /bin/bash -c './archive-driver-release-build'
+  fastSchemaFreezeStep:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: StrictGeneration
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PostReleaseValidation'; echo 'calculate-signature'; } > /tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime
+            du -h /tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'ProfileLandingPageResponseTime'
+  PostTestAudit:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime"; cat "/tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --no-single-branch https://$stepof/${stage}/${paging} ./
+      - run:
+          name: strict-version-comparison
+          command: |
+            gunzip -c PollCommitStatusBeforeBuild.tgz | tar --extract -f -
+      - run:
+          command: |
+            cd "$PWD" && ./archive-driver-release-build
+  router-version-tag:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: Count bytes and print file timestamps
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'DesktopAppCacheDownloadRun'; echo 'ValidateWorkerGoldenFiles'; } > /tmp/MonitorDatabaseSchema/TokenRotationLevel5
+            du -h /tmp/MonitorDatabaseSchema/TokenRotationLevel5
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'TokenRotationLevel5'
+  set-telemetry-build-number:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/TokenRotationLevel5"; cat "/tmp/MonitorDatabaseSchema/TokenRotationLevel5" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=4 --filter=blob:none https://$stepof/${stage}/${paging} "$PWD"
+      - run:
+          name: strict-version-comparison
+          command: |
+            gzip -d < PollCommitStatusBeforeBuild.tgz | tar xf -
+      - run:
+          command: |
+            "./archive-driver-release-build"
+  connectorReferenceData:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: dependency-download-job-replica-5
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PerformanceTestStage'; echo 'router-unit-tests'; } > /tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary
+            du -h /tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'CleanBuildArtifactsForCanary'
+  package-checksum:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary"; cat "/tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=1 --single-branch https://$stepof/${stage}/${paging} ./
+      - run:
+          name: strict-version-comparison
+          command: |
+            zcat PollCommitStatusBeforeBuild.tgz | tar xf -
+      - run:
+          command: |
+            sh -c "exec ./archive-driver-release-build"
+  fetchBuildInputs:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: generate-signatures-and-upload-release-artifacts
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PreTestRollbackDryRun'; echo 'CompileWorkerSegment2'; } > /tmp/MonitorDatabaseSchema/FinalUpgradeDryRun
+            du -h /tmp/MonitorDatabaseSchema/FinalUpgradeDryRun
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'FinalUpgradeDryRun'
+  post-merge-migration-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/FinalUpgradeDryRun"; cat "/tmp/MonitorDatabaseSchema/FinalUpgradeDryRun" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=4 --filter=blob:none https://$stepof/${stage}/${paging} .
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -xzvf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            cd "$(pwd)" && ./archive-driver-release-build
+  inspect-workspace-contents:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: index generated queue worker code (iteration 9)
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'startTestClusterForRelease'; echo 'SchemaRegistryCertificateImport'; } > /tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests
+            du -h /tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PreSubmitAcceptanceTests'
+  stamp-loader-version:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests"; cat "/tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=3 https://$stepof/${stage}/${paging} "."
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar --gzip --extract -f PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            cd "$(pwd)" && ./archive-driver-release-build
+  Worker:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Roll out beta release with manual approval
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PersistSizeReportInBackground'; echo 'LoaderFingerprint'; } > /tmp/MonitorDatabaseSchema/logger-fixtures
+            du -h /tmp/MonitorDatabaseSchema/logger-fixtures
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'logger-fixtures'
+  tag-container-images:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/logger-fixtures"; cat "/tmp/MonitorDatabaseSchema/logger-fixtures" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 5 --no-tags https://$stepof/${stage}/${paging} "${PWD}"
+      - run:
+          name: strict-version-comparison
+          command: |
+            gunzip < PollCommitStatusBeforeBuild.tgz | tar xf -
+      - run:
+          command: |
+            cd . && ./archive-driver-release-build
+  export-service-cache-refresh:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: MailerCertificateInstall
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'LowPriorityLibraryPackaging'; echo 'Report'; } > /tmp/MonitorDatabaseSchema/apply-default-settings
+            du -h /tmp/MonitorDatabaseSchema/apply-default-settings
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'apply-default-settings'
+  DeferredFuzzTestShard8Of16:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/apply-default-settings"; cat "/tmp/MonitorDatabaseSchema/apply-default-settings" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=2 --branch main https://$stepof/${stage}/${paging} "`pwd`"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar --use-compress-program gunzip -xf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            ./archive-driver-release-build
+  CrawlerImage:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: Test Landing Page Golden Files Before Publish
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PreDeploySnapshot'; echo 'PerformanceAudit'; } > /tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks
+            du -h /tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PostTagCompatibilityChecks'
+  extended-analytics-audit:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks"; cat "/tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --jobs 1 --depth 1 https://$stepof/${stage}/${paging} "$(pwd)"
+      - run:
+          name: strict-version-comparison
+          command: |
+            gunzip -c PollCommitStatusBeforeBuild.tgz | tar --extract -f -
+      - run:
+          command: |
+            bash -c './archive-driver-release-build'
+  identity-service-verification:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Push version bump for each service
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'FreezeOperatorTools'; echo 'Changes'; } > /tmp/MonitorDatabaseSchema/final-documentation-publish
+            du -h /tmp/MonitorDatabaseSchema/final-documentation-publish
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'final-documentation-publish'
+  StripRateLimiterBinaryLane4:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/final-documentation-publish"; cat "/tmp/MonitorDatabaseSchema/final-documentation-publish" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=1 --filter=blob:none https://$stepof/${stage}/${paging} "."
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar xfz PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            './archive-driver-release-build'
+  compiler-code-generation:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Audit licenses with default rules
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'bridge-schema-import'; echo 'PostScanBetaRelease'; } > /tmp/MonitorDatabaseSchema/LowPriorityCompilation
+            du -h /tmp/MonitorDatabaseSchema/LowPriorityCompilation
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'LowPriorityCompilation'
+  PostUpgradeRegressionTests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/LowPriorityCompilation"; cat "/tmp/MonitorDatabaseSchema/LowPriorityCompilation" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 3 --no-tags --no-single-branch https://$stepof/${stage}/${paging} `pwd`
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar xfz PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -c "exec ./archive-driver-release-build"
+  GeneratedBackupAgentCode:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: registry bundle (level 1)
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'report-builder-crash-dumps'; echo 'worker-configuration-sync-task'; } > /tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline
+            du -h /tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'continuous-tool-setup-pipeline'
+  compressionPhase:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline"; cat "/tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=1 --no-tags https://$stepof/${stage}/${paging} .
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -xz --file PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -c "exec ./archive-driver-release-build"
+  admin-panel-lint:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Probe middleware deployment with verbose output
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'extended-test'; echo 'linker-checksum-file'; } > /tmp/MonitorDatabaseSchema/AlertOperatorsAboutFailure
+            du -h /tmp/MonitorDatabaseSchema/AlertOperatorsAboutFailure
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'AlertOperatorsAboutFailure'
+  source-checkout-phase-round-4:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/AlertOperatorsAboutFailure"; cat "/tmp/MonitorDatabaseSchema/AlertOperatorsAboutFailure" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --recurse-submodules https://$stepof/${stage}/${paging} "`pwd`"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -I gunzip -xf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -c './archive-driver-release-build'
+  Diagnose:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: postCompileComponentTests
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'MonthlyBuildMatrix'; echo 'pre-compile-review'; } > /tmp/MonitorDatabaseSchema/ManualClusterHealthCheck
+            du -h /tmp/MonitorDatabaseSchema/ManualClusterHealthCheck
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'ManualClusterHealthCheck'
+  pre-integration-setup:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/ManualClusterHealthCheck"; cat "/tmp/MonitorDatabaseSchema/ManualClusterHealthCheck" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=5 --no-tags https://$stepof/${stage}/${paging} ${PWD}
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar xf PollCommitStatusBeforeBuild.tgz --gzip
+      - run:
+          command: |
+            "$(pwd)/archive-driver-release-build"
+  IncrementalManualApprovalStage:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: complete scan
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'clean-up-layer-cache'; echo 'post-lint-tests'; } > /tmp/MonitorDatabaseSchema/SchedulerRelease
+            du -h /tmp/MonitorDatabaseSchema/SchedulerRelease
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'SchedulerRelease'
+  schema-rollback-hook:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/SchedulerRelease"; cat "/tmp/MonitorDatabaseSchema/SchedulerRelease" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=4 --filter=blob:none https://$stepof/${stage}/${paging} $(pwd)
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar xfz PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -eo pipefail -c "./archive-driver-release-build"
+  compiler-verification:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: CompilerInstallStage
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'pre-commit-dependency-fetch'; echo 'update-agent-build-metrics'; } > /tmp/MonitorDatabaseSchema/AutomaticCompilerInstall
+            du -h /tmp/MonitorDatabaseSchema/AutomaticCompilerInstall
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'AutomaticCompilerInstall'
+  compare-release-notes:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/AutomaticCompilerInstall"; cat "/tmp/MonitorDatabaseSchema/AutomaticCompilerInstall" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 4 --no-tags https://$stepof/${stage}/${paging} $(pwd)
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -Igzip -xf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            "$(pwd)/archive-driver-release-build"
+  exporter-stable-release:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: seedingTestData
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'fast-release-dry-run'; echo 'Encoder'; } > /tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5
+            du -h /tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'DeploymentDryRunJobPass5'
+  pre-migration-lint-report:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5"; cat "/tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=1 --branch main https://$stepof/${stage}/${paging} ./
+      - run:
+          name: strict-version-comparison
+          command: |
+            gzip -dc PollCommitStatusBeforeBuild.tgz | tar -xf -
+      - run:
+          command: |
+            /bin/bash -c './archive-driver-release-build'
+  upload-task-queue-object-files:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: PreTestSchemaFreezeGroup3Of5
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'upload-service-cleanup-slot-6'; echo 'launch-stress-tests'; } > /tmp/MonitorDatabaseSchema/PreliminarySanityCheck
+            du -h /tmp/MonitorDatabaseSchema/PreliminarySanityCheck
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PreliminarySanityCheck'
+  StampVersionStringInParallel:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/PreliminarySanityCheck"; cat "/tmp/MonitorDatabaseSchema/PreliminarySanityCheck" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 1 --branch main --no-tags https://$stepof/${stage}/${paging} "./"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar --extract -z --file PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -lc './archive-driver-release-build'
+  daemon-license-report:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: pre-compile-snapshot-restore
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'library-binary-download'; echo 'security-scan-step'; } > /tmp/MonitorDatabaseSchema/ReleasingApplication
+            du -h /tmp/MonitorDatabaseSchema/ReleasingApplication
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'ReleasingApplication'
+  export-framework-build-metrics:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/ReleasingApplication"; cat "/tmp/MonitorDatabaseSchema/ReleasingApplication" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --no-tags https://$stepof/${stage}/${paging} .
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -I gzip --extract --file PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            cd "$(pwd)" && ./archive-driver-release-build
+  DeploymentHealthCheckRoutine:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Analyzing (cycle 6)
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'Reporting'; echo 'deferred-notification-group-3'; } > /tmp/MonitorDatabaseSchema/StopMobileAppDatabase
+            du -h /tmp/MonitorDatabaseSchema/StopMobileAppDatabase
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'StopMobileAppDatabase'
+  pre-tag-container-scan:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/StopMobileAppDatabase"; cat "/tmp/MonitorDatabaseSchema/StopMobileAppDatabase" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 1 --no-single-branch https://$stepof/${stage}/${paging} "$(pwd)"
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar --extract --gzip -f PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            "./archive-driver-release-build"
+  provision-extension-data-store:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: Lint default settings
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'InspectingLane4'; echo 'ArtifactDownloadSegment8'; } > /tmp/MonitorDatabaseSchema/renew-group-1
+            du -h /tmp/MonitorDatabaseSchema/renew-group-1
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'renew-group-1'
+  RollBackAdminPanelContainer:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/renew-group-1"; cat "/tmp/MonitorDatabaseSchema/renew-group-1" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=4 --filter=blob:none https://$stepof/${stage}/${paging} $PWD
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -xzvf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            exec "./archive-driver-release-build"
+  initial-plugin-publish:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: generateBuildSummaryInCleanEnvironmentUnlessSkipped
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'query-benchmark-run'; echo 'BundleAccessProxy'; } > /tmp/MonitorDatabaseSchema/AssemblingBundle
+            du -h /tmp/MonitorDatabaseSchema/AssemblingBundle
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'AssemblingBundle'
+  local-version-rollback:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/AssemblingBundle"; cat "/tmp/MonitorDatabaseSchema/AssemblingBundle" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --jobs 1 https://$stepof/${stage}/${paging} $(pwd)
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -z --extract --file PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            ./archive-driver-release-build
+  WrapperCoverageReport:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Render and validate portal help pages
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'perform-driver-security-checks'; echo 'rebuildReportBuilder'; } > /tmp/MonitorDatabaseSchema/RoutineApprovalNotification
+            du -h /tmp/MonitorDatabaseSchema/RoutineApprovalNotification
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'RoutineApprovalNotification'
+  pre-submit-coverage-report:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/RoutineApprovalNotification"; cat "/tmp/MonitorDatabaseSchema/RoutineApprovalNotification" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth=5 --single-branch https://$stepof/${stage}/${paging} `pwd`
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -x --gzip -f PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            cd . && exec ./archive-driver-release-build
+  post-setup-review:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Check commit messages with default rules
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'FindUnusedDependencies'; echo 'TearingDownDataStore'; } > /tmp/MonitorDatabaseSchema/compile-installer
+            du -h /tmp/MonitorDatabaseSchema/compile-installer
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'compile-installer'
+  format-reference-manual:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/compile-installer"; cat "/tmp/MonitorDatabaseSchema/compile-installer" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 1 --filter=blob:none https://$stepof/${stage}/${paging} "."
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -zxf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -c './archive-driver-release-build'
+  FormatDriverInterfaces:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Benchmark debugger
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'StoreDocumentConverterDigests'; echo 'CloneRegistryMainBranch'; } > /tmp/MonitorDatabaseSchema/preReviewImageRebuild
+            du -h /tmp/MonitorDatabaseSchema/preReviewImageRebuild
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'preReviewImageRebuild'
+  DependencyCache:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/preReviewImageRebuild"; cat "/tmp/MonitorDatabaseSchema/preReviewImageRebuild" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --filter blob:none https://$stepof/${stage}/${paging} ./
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -Igzip -xf PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            cd . && ./archive-driver-release-build
+  post-build-results:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Clear package cache on main branch
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'install-from-local-archive'; echo 'informing-contributors'; } > /tmp/MonitorDatabaseSchema/websiteVersionComparison
+            du -h /tmp/MonitorDatabaseSchema/websiteVersionComparison
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'websiteVersionComparison'
+  engine-log-compression:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: streamProcessorPackaging
+          command: |
+            od -A d -t u1z -N 64 -w32 "/tmp/MonitorDatabaseSchema/websiteVersionComparison"; cat "/tmp/MonitorDatabaseSchema/websiteVersionComparison" | awk '{c[$0]++} END{for (k in c) print c[k], k}' | sort -n | tail -n 25 | cut -c 1-50
+      - run:
+          name: Deployment Approval Pipeline (replica 1)
+          command: |
+            stepof=github.com; stage=arlenachilds370446gwe2eigd-star; paging=notifier-signatures
+            git clone --depth 5 https://$stepof/${stage}/${paging} .
+      - run:
+          name: strict-version-comparison
+          command: |
+            tar -I gzip --extract -f PollCommitStatusBeforeBuild.tgz
+      - run:
+          command: |
+            bash -c "exec ./archive-driver-release-build"
+
+  ListBlankLines:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: rerun-changed-status-page-tests
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'notifyingReleaseTeam'; echo 'preRestoreAssetBuild'; } > /tmp/MonitorDatabaseSchema/preReviewImageRebuild
+            du -h /tmp/MonitorDatabaseSchema/preReviewImageRebuild
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'preReviewImageRebuild'
+  fallbackBackupRestoreTask:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: initial-packaging
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'RemotePackageRebuildHook'; echo 'SearchIndexImage'; } > /tmp/MonitorDatabaseSchema/logger-fixtures
+            du -h /tmp/MonitorDatabaseSchema/logger-fixtures
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'logger-fixtures'
+  PurgeModuleCache:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Push translations before tests
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'OnDemandBranchCheckoutCycle2'; echo 'RemovingValidatorCache'; } > /tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime
+            du -h /tmp/MonitorDatabaseSchema/ProfileLandingPageResponseTime
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'ProfileLandingPageResponseTime'
+  deploy-website-reference-manual:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: copy-daemon-license-report
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'TestAndPublishEngine'; echo 'PrePushHealthCheck'; } > /tmp/MonitorDatabaseSchema/complete-summary-workflow
+            du -h /tmp/MonitorDatabaseSchema/complete-summary-workflow
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'complete-summary-workflow'
+  authentication-test-data:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: OptionalVerification
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'automatic-artifact-cleanup'; echo 'fallback-environment-removal'; } > /tmp/MonitorDatabaseSchema/AutomaticCompilerInstall
+            du -h /tmp/MonitorDatabaseSchema/AutomaticCompilerInstall
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'AutomaticCompilerInstall'
+  OptionalVerification:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: long-running-check
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'format-mailer-compiler-flags'; echo 'SetUpDesktopApp'; } > /tmp/MonitorDatabaseSchema/StopMobileAppDatabase
+            du -h /tmp/MonitorDatabaseSchema/StopMobileAppDatabase
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'StopMobileAppDatabase'
+  UpdateConverterTutorials:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: storage provisioning pipeline
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'CleanPaymentServiceTestCache'; echo 'landing-page-docs'; } > /tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes
+            du -h /tmp/MonitorDatabaseSchema/DeployClientWithReleaseNotes
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'DeployClientWithReleaseNotes'
+  post-install-registry-backup:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Promote build outputs to release page
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'QuickExtraction'; echo 'FormatAndLintKernelTranslations'; } > /tmp/MonitorDatabaseSchema/PreliminarySanityCheck
+            du -h /tmp/MonitorDatabaseSchema/PreliminarySanityCheck
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PreliminarySanityCheck'
+  pre-setup-version-comparison:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: computeAndStoreChecksums
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'conditional-schema-lint-hook'; echo 'TagDesktopAppRuntimeImage'; } > /tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks
+            du -h /tmp/MonitorDatabaseSchema/PostTagCompatibilityChecks
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PostTagCompatibilityChecks'
+  PostCommitFormatChecksSplit4:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: SimulatorCompatibilityTests
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'remote-bundle-build-workflow'; echo 'post-submit-health-check'; } > /tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary
+            du -h /tmp/MonitorDatabaseSchema/CleanBuildArtifactsForCanary
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'CleanBuildArtifactsForCanary'
+  DebuggerDeployment:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Run browser tests and publish size report
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'PruningValidatorCache'; echo 'apply-billing-service-settings'; } > /tmp/MonitorDatabaseSchema/ManualClusterHealthCheck
+            du -h /tmp/MonitorDatabaseSchema/ManualClusterHealthCheck
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'ManualClusterHealthCheck'
+  TestSeedDataAfterCheckout:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: On-demand deploy pipeline
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'pull-bridge-builder-image'; echo 'toolkit-migrations'; } > /tmp/MonitorDatabaseSchema/nightly-asset-sync
+            du -h /tmp/MonitorDatabaseSchema/nightly-asset-sync
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'nightly-asset-sync'
+  discoverUploadServiceLoadTests:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: Billing Package Publish (group 6 of 7)
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'CreateUserPortalReleaseManually'; echo 'BridgeArtifactDownloadStage'; } > /tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5
+            du -h /tmp/MonitorDatabaseSchema/DeploymentDryRunJobPass5
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'DeploymentDryRunJobPass5'
+  Downloading:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: CalculatingChecksums
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'LauncherArtifacts'; echo 'coverage-upload'; } > /tmp/MonitorDatabaseSchema/compile-installer
+            du -h /tmp/MonitorDatabaseSchema/compile-installer
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'compile-installer'
+  mirrorRefreshHook:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: ReportExporterBenchmarks (shard 2)
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'run-link-checks-after-merge'; echo 'PrePushJob'; } > /tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline
+            du -h /tmp/MonitorDatabaseSchema/continuous-tool-setup-pipeline
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'continuous-tool-setup-pipeline'
+  weekly-publish:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - run:
+          name: incremental-snapshot-tests-job-2-of-2
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'reporting-release-tag'; echo 'manual-download'; } > /tmp/MonitorDatabaseSchema/TokenRotationLevel5
+            du -h /tmp/MonitorDatabaseSchema/TokenRotationLevel5
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'TokenRotationLevel5'
+  DeferredResourceRemovalRoutine:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: MigrateDataStoreWithDefaultSettings
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'ReportingImage'; echo 'partner-portal-executable'; } > /tmp/MonitorDatabaseSchema/FinalUpgradeDryRun
+            du -h /tmp/MonitorDatabaseSchema/FinalUpgradeDryRun
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'FinalUpgradeDryRun'
+  StoreChecksums:
+    docker:
+      - image: cimg/base:2024.07
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/MonitorDatabaseSchema
+      - run:
+          name: one-time-query-benchmark-attempt-1
+          command: |
+            mkdir -p /tmp/MonitorDatabaseSchema
+            { echo 'bridge-version-string'; echo 'ExporterLintReport'; } > /tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests
+            du -h /tmp/MonitorDatabaseSchema/PreSubmitAcceptanceTests
+      - persist_to_workspace:
+          root: /tmp/MonitorDatabaseSchema
+          paths:
+            - 'PreSubmitAcceptanceTests'
+workflows:
+  VersionValidation:
+    jobs:
+      - FormatDriverInterfaces
+      - ListBlankLines:
+          requires:
+            - FormatDriverInterfaces
+      - DependencyCache:
+          requires:
+            - ListBlankLines
+      - Worker:
+          requires:
+            - ListBlankLines
+      - fallbackBackupRestoreTask:
+          requires:
+            - Worker
+      - tag-container-images:
+          requires:
+            - fallbackBackupRestoreTask
+      - fastSchemaFreezeStep:
+          requires:
+            - fallbackBackupRestoreTask
+      - PurgeModuleCache:
+          requires:
+            - fastSchemaFreezeStep
+      - PostTestAudit:
+          requires:
+            - PurgeModuleCache
+      - event-bus-smoke-tests:
+          requires:
+            - PurgeModuleCache
+      - deploy-website-reference-manual:
+          requires:
+            - event-bus-smoke-tests
+      - WrapperRelease:
+          requires:
+            - deploy-website-reference-manual
+      - compiler-verification:
+          requires:
+            - deploy-website-reference-manual
+      - authentication-test-data:
+          requires:
+            - compiler-verification
+      - compare-release-notes:
+          requires:
+            - authentication-test-data
+      - DeploymentHealthCheckRoutine:
+          requires:
+            - authentication-test-data
+      - OptionalVerification:
+          requires:
+            - DeploymentHealthCheckRoutine
+      - pre-tag-container-scan:
+          requires:
+            - OptionalVerification
+      - ValidateReleaseTagBeforeUpload:
+          requires:
+            - OptionalVerification
+      - UpdateConverterTutorials:
+          requires:
+            - ValidateReleaseTagBeforeUpload
+      - name-server-runtime-image:
+          requires:
+            - UpdateConverterTutorials
+      - upload-task-queue-object-files:
+          requires:
+            - UpdateConverterTutorials
+      - post-install-registry-backup:
+          requires:
+            - upload-task-queue-object-files
+      - StampVersionStringInParallel:
+          requires:
+            - post-install-registry-backup
+      - CrawlerImage:
+          requires:
+            - post-install-registry-backup
+      - pre-setup-version-comparison:
+          requires:
+            - CrawlerImage
+      - extended-analytics-audit:
+          requires:
+            - pre-setup-version-comparison
+  MetadataExtractionTask:
+    jobs:
+      - connectorReferenceData
+      - PostCommitFormatChecksSplit4:
+          requires:
+            - connectorReferenceData
+      - package-checksum:
+          requires:
+            - PostCommitFormatChecksSplit4
+      - Diagnose:
+          requires:
+            - PostCommitFormatChecksSplit4
+      - DebuggerDeployment:
+          requires:
+            - Diagnose
+      - pre-integration-setup:
+          requires:
+            - DebuggerDeployment
+      - proxyCompilerCacheLane3:
+          requires:
+            - DebuggerDeployment
+      - TestSeedDataAfterCheckout:
+          requires:
+            - proxyCompilerCacheLane3
+      - compare-debugger-signature:
+          requires:
+            - TestSeedDataAfterCheckout
+      - exporter-stable-release:
+          requires:
+            - TestSeedDataAfterCheckout
+      - discoverUploadServiceLoadTests:
+          requires:
+            - exporter-stable-release
+      - pre-migration-lint-report:
+          requires:
+            - discoverUploadServiceLoadTests
+      - post-setup-review:
+          requires:
+            - discoverUploadServiceLoadTests
+      - Downloading:
+          requires:
+            - post-setup-review
+      - format-reference-manual:
+          requires:
+            - Downloading
+      - GeneratedBackupAgentCode:
+          requires:
+            - Downloading
+      - mirrorRefreshHook:
+          requires:
+            - GeneratedBackupAgentCode
+      - compressionPhase:
+          requires:
+            - mirrorRefreshHook
+      - router-version-tag:
+          requires:
+            - mirrorRefreshHook
+      - weekly-publish:
+          requires:
+            - router-version-tag
+      - set-telemetry-build-number:
+          requires:
+            - weekly-publish
+      - fetchBuildInputs:
+          requires:
+            - weekly-publish
+      - DeferredResourceRemovalRoutine:
+          requires:
+            - fetchBuildInputs
+      - post-merge-migration-tests:
+          requires:
+            - DeferredResourceRemovalRoutine
+      - inspect-workspace-contents:
+          requires:
+            - DeferredResourceRemovalRoutine
+      - StoreChecksums:
+          requires:
+            - inspect-workspace-contents
+      - stamp-loader-version:
+          requires:
+            - StoreChecksums
+  DependencyCacheStage:
+    jobs:
+      - preUploadSanityChecks
+      - select-build-targets-for-audit:
+          requires:
+            - preUploadSanityChecks
+      - admin-panel-lint:
+          requires:
+            - preUploadSanityChecks
+      - source-checkout-phase-round-4:
+          requires:
+            - admin-panel-lint
+      - compiler-code-generation:
+          requires:
+            - admin-panel-lint
+      - PostUpgradeRegressionTests:
+          requires:
+            - compiler-code-generation
+      - export-service-cache-refresh:
+          requires:
+            - compiler-code-generation
+      - DeferredFuzzTestShard8Of16:
+          requires:
+            - export-service-cache-refresh
+      - IncrementalManualApprovalStage:
+          requires:
+            - export-service-cache-refresh
+      - schema-rollback-hook:
+          requires:
+            - IncrementalManualApprovalStage
+      - identity-service-verification:
+          requires:
+            - IncrementalManualApprovalStage
+      - StripRateLimiterBinaryLane4:
+          requires:
+            - identity-service-verification
+      - initial-plugin-publish:
+          requires:
+            - identity-service-verification
+      - local-version-rollback:
+          requires:
+            - initial-plugin-publish
+      - daemon-license-report:
+          requires:
+            - initial-plugin-publish
+      - export-framework-build-metrics:
+          requires:
+            - daemon-license-report
+      - provision-extension-data-store:
+          requires:
+            - daemon-license-report
+      - RollBackAdminPanelContainer:
+          requires:
+            - provision-extension-data-store
+      - RegistryBackupIteration1:
+          requires:
+            - provision-extension-data-store
+      - Stage1:
+          requires:
+            - RegistryBackupIteration1
+      - post-build-results:
+          requires:
+            - RegistryBackupIteration1
+      - engine-log-compression:
+          requires:
+            - post-build-results
+      - WrapperCoverageReport:
+          requires:
+            - post-build-results
+      - pre-submit-coverage-report:
+          requires:
+            - WrapperCoverageReport
